@@ -1,0 +1,53 @@
+services:
+  http-server-projeto-korp:
+    build:
+      context: ./http-server-projeto-korp
+    image: http-server-projeto-korp:latest
+    container_name: http-server-projeto-korp
+    networks:
+      - korp-net
+    restart: unless-stopped
+    # sem "ports": o serviço não deve ficar acessível diretamente pelo host
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    networks:
+      - korp-net
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d/
+    depends_on:
+      - http-server-projeto-korp
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    networks:
+      - korp-net
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - http-server-projeto-korp
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    networks:
+      - korp-net
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+networks:
+  korp-net:
+    external: true
